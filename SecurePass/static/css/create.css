@@ -1,0 +1,40 @@
+body {
+    display: grid;
+    overflow: auto;
+    grid-template-areas: 
+        "nav nav"
+        "main main"
+        "aside section"
+        "footer footer";
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 60px 500px 200px 60px;
+    gap: 10px;
+    margin: 10px;
+    background-color: whitesmoke;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+nav, main, aside, section, footer {
+    background-color: palevioletred;
+    border: thin solid black;
+}
+
+#header {
+    grid-area: nav;
+}
+
+#make_post {
+    grid-area: main;
+}
+
+#image_attachments {
+    grid-area: aside;
+}
+
+#video_attachments {
+    grid-area: section;
+}
+
+#footer {
+    grid-area: footer;
+}

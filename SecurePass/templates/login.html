@@ -1,0 +1,53 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>SecurePass</title>
+        <link rel="stylesheet" href="{% static 'css/login.css' %}">
+        <script type="text/javascript" src="{% static 'js/jquery-3.6.3.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/login.js' %}"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <script src="https://kit.fontawesome.com/b12f80ab13.js" crossorigin="anonymous"></script>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    </head>
+    <body>
+        <div style="display:flex; flex-direction: row; align-items:center;color:#23395B;">
+            <img src="{% static 'images/logo-placeholder.png' %}" alt="Logo" class="logo">
+            <h1>SecurePass</h1>
+        </div>
+        <div class='box'>
+        <div class='box-form'>
+            <div class='box-login-tab'></div>
+            <div class='box-login-title'>
+            <i class="fa-solid fa-right-to-bracket"></i><h2>LOG IN</h2>
+            </div>
+            <div class='box-login'>
+            <div class='fieldset-body' id='login_form'>
+                <i onclick="openLoginInfo();" class="fa-solid fa-ellipsis" title='More Information'></i>
+                <p class='field'>
+                    <label for='user'>E-MAIL</label>
+                    <input type='text' id='user' name='user' title='Username' />
+                    <span id='valida' class='i i-warning'><i class="fa-solid fa-triangle-exclamation"></i></span>
+                </p>
+                <p class='field'>
+                    <label for='pass'>PASSWORD</label>
+                    <input type='password' id='pass' name='pass' title='Password' />
+                    <span id='valida' class='i i-close'><i class="fa-solid fa-triangle-exclamation"></i></span>
+                </p>
+
+                <input type='submit' id='do_login' value='LOG IN' title='Log In' />
+            </div>
+            </div>
+        </div>
+        <div class='box-info'>
+            <p><i onclick="closeLoginInfo();" class="fa-solid fa-xmark fa-lg" title='Back to Sign In'></i><h3>Need Help?</h3></p>
+            <div class='line-wh'></div>
+                <button onclick="" class='b-support' title='Forgot Password?'> Forgot Password?</button>
+                <button onclick="" class='b-support' title='Contact Support'> Contact Support</button>
+            </div>
+        </div>  
+    </body>
+</html>
