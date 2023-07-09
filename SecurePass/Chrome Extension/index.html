@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=\, initial-scale=1.0">
-  <title>Document</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecurePass</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
@@ -14,9 +14,9 @@
   <div id="main">
     <img src="logo.png" style="width: 300px;  height: auto" alt="SecurePass logo">
     <h3 style="font-family: Roboto">Please, enter your <a href="documentation.html">Organization Code</a></h3> <!--make a documentation.html file which provides further info about the organization code-->
-    <form action="/org_code.php" method="post">
-      <input type="text" name="org_id" id="org_id">
-      <input type="submit" value="Submit">
+    <form action="http://localhost:8080/" method="post">
+      <input type="text" name="org_code" id="org_code">
+      <input type="submit" value="Submit" id="submit">
     </form>
   </div>
 </body>

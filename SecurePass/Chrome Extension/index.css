@@ -1,6 +1,6 @@
 #main {
   text-align: center;
-  width: 177vh;
+  width: 98.5%;
   height: 56vh;
   border: 3px solid rgb(32.2, 34.9, 57.6);
   background-color: white;
@@ -23,7 +23,7 @@ input[type=text], select {
 }
 
 input[type=submit] {
-  height: 5vh;
+  height: 4vh;
   background-color: white;
   color: rgb(32.2, 34.9, 57.6);
 }
