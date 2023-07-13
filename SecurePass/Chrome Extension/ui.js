@@ -9,3 +9,37 @@
 //  whitelist. If a file's checksum is not on the whitelist, the post will be blocked, and the user will be redirected to a new 
 //  tab which will prompt them to upload the file. 
 
+const group = document.getElementById('grp');
+const name_tag = document.getElementById('name');
+
+console.log("Group: "+group)
+
+function getCookie(cname) {
+  let name = cname + '=';
+  let decodedCookie = decodeURIComponent(document.cookie);
+  let ca = decodedCookie.split(';');
+  for (let i = 0; i < ca.length; i++){
+    let c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0){
+      return c.substring(name.length, c.length);
+    }
+
+  }
+  return "";
+}
+let grp = getCookie('type');
+if (grp == 'admin') {
+  group.innerHTML = "Administrator";
+} else {
+  group.innerHTML = grp;
+}
+ 
+
+let name = getCookie('name');
+name_tag.innerHTML = name;
+
+
+

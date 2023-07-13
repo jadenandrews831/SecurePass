@@ -5,13 +5,18 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <link rel="stylesheet" href="index.css">
 </head>
-<body style="width: 500px; height:300px;">
+<body>
+  
+  <div id="main">
+    <h1>Welcome, <name id="name"></name></h1>
+    <h1 id="group"></h1>
+    <p>Secure Pass is active</p><br>
+    <form action="http://localhost:8080/securepass.html" method="post">
+      <input type="submit" value="logout" id="logout">
+    </form>
+  </div>
   <script src="ui.js"></script>
-  <h1>Welcome ***USER</h1>
-  <p>Secure Pass is not yet active</p><br>
-  <form action="http://localhost:8080/securepass.html" method="post">
-    <input type="submit" value="logout" id="logout">
-  </form>
 </body>
 </html>

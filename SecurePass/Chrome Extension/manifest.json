@@ -21,10 +21,14 @@
     "storage",
     "tabs",
     "cookies",
-    "activeTab"
+    "activeTab",
+    "declarativeNetRequest",
+    "proxy"
+    
   ],
   "host_permissions": [
-    "http://localhost:8080/"
+    "http://localhost:8080/",
+    "http://www.linkedin.com/*"
   ]
 }
 
