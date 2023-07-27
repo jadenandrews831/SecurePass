@@ -8,14 +8,30 @@
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
- <div id="main">
-  <h1>Welcome, <name id="name">USER</name> </h1>
-  <h1 id="grp"></h1>
-  <p>Secure Pass is active</p><br>
-  <form action="http://localhost:8080/securepass.html" method="post">
-    <input type="submit" value="logout" id="logout">
-  </form>
- </div>
+  <table id="user_info_tbl" style="text-align: center;">
+    <tr>
+      <td colspan="2" style="text-align: left"><a href="http://localhost:8080/"><img src="logo.png" width="360px" height="auto" alt="Secure Pass"></a></td>
+      <td style="font-weight: bold;" id="org_id"></td>
+    </tr>
+    <tr>
+      <th style="font-size: 32px; text-align: left; padding-left: 25px">Welcome, <name id="name">USER</name><br> </th>
+      <td width="33.3%"></td>
+      <td width="33.3%" style="font-weight: bold;">Secure Pass is active <br><br></td>
+    </tr>
+    <tr>
+      <th id="grp" style="text-align: left; padding-left: 25px"></th>
+      <td></td>
+      <td>
+        <form action="http://localhost:8080/securepass.html" method="post">
+          <input type="submit" value="logout" id="logout">
+        </form></td>
+    </tr>
+    
+  </table>
+  <div id="manage" class="ctable">
+  </div>
+
  <script src="ui.js"></script>
+ <script src="admin.js"></script>
 </body>
 </html>

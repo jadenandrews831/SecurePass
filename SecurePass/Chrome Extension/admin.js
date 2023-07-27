@@ -1,0 +1,1 @@
+const org_id = documeng.querySelector('org_id')

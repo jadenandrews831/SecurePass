@@ -1,12 +1,76 @@
+let reporting = false;
+
+function stopblocking(){
+  chrome.declarativeNetRequest.updateDynamicRules
+  (
+    {
+      removeRuleIds: [2]
+    },
+    (response) => {
+      console.log("response: "+response);
+      console.log('rule removed');
+    }
+  );
+}
+
+function startblocking(tab, post) {
+  chrome.declarativeNetRequest.updateDynamicRules(
+    {
+      addRules: [
+        {
+          action: {
+            type: "block",
+          },
+          condition: {
+            urlFilter: "www.linkedin.com", // block URLs that starts with this
+            domains: ["linkedin.com"], // on this domain
+          },
+          id: 2,
+          priority: 1,
+        },
+      ],
+      removeRuleIds: [2], // this removes old rule if any
+    },
+    () => {
+      console.log("successfully blocked post");
+      if (post){
+        chrome.tabs.sendMessage(tab.id, {message:'click_post'});
+      }
+    });
+}
+
 
 chrome.tabs.onUpdated.addListener(function (tabID, changeInfo, tab) {
   console.log("tab info: "+Object.getOwnPropertyNames(changeInfo));
+  console.log(changeInfo.audible)
+  stopblocking();
   if (changeInfo.url == 'http://localhost:8080/') {
     chrome.cookies.get({'url':'http://localhost:8080/', "name": "org-id"}, function(cookie){
       console.log(cookie.value);
       // chrome.storage.local.set({'org-id': cookie.value});  add org-id to local storage
       console.log('set cookie');
     })
+  }
+
+  chrome.tabs.query({active: true, url: `http://localhost:8080/report/report.html`}, function (tbs) {
+    reporting = true;
+    if (tbs.length > 1){
+      chrome.tabs.remove(tabID, function () {
+        console.log("stopped multiple tabs from opening")
+      });
+    }
+    if (tbs.length == 0 || tbs.length == undefined) {
+      reporting = false;
+    }
+    
+  })
+
+  if (changeInfo.audible == false){
+    console.log("blocking")
+    chrome.tabs.query({active:true, audible:true}, function (tabs) {
+      let tab = tabs[0];
+      startblocking(tab, false);
+    });
   }
 
   function monitorPost(){
@@ -39,6 +103,7 @@ chrome.runtime.onConnect.addListener(function(port) {
         console.log("tab.id: "+tab.id);
         console.log("status: "+tab.status);
         if (tab.status == 'complete'){
+          startblocking(tab.id, false);
           chrome.tabs.sendMessage(tab.id, {message:'post'});
           console.log("Waiting for post request")
           
@@ -85,50 +150,21 @@ chrome.runtime.onConnect.addListener(function(port) {
         });
       }
       if (query == 'new_report'){
-        console.log("making new report")
+        stopblocking();
+        console.log("making new report");
         chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
           var tab = tabs[0];
+          startblocking(tab, false);
           console.log("tabs: "+Object.getOwnPropertyNames(tab))
           waitForLoad(tab);
           console.log('loaded from background...')
         })
       }
 
-      if (query == 'post_clicked'){
-        chrome.tabs.query({url: 'http://localhost:8080/report.html'}, function (response) {
-          console.log(response);  
-          if (response == '' || response == undefined) {
-            chrome.tabs.create({"url": 'http://localhost:8080/report.html' });
-          } else {
-            chrome.tabs.update(response[0].id, {highlighted: true});
-          }
-        })
-      }
-
       if (query == 'click'){
         chrome.tabs.query({active:true, status:'complete'}, function (tabs) {
           var tab = tabs[0];
-          chrome.declarativeNetRequest.updateDynamicRules(
-          {
-            addRules: [
-              {
-                action: {
-                  type: "block",
-                },
-                condition: {
-                  urlFilter: "www.linkedin.com", // block URLs that starts with this
-                  domains: ["linkedin.com"], // on this domain
-                },
-                id: 2,
-                priority: 1,
-              },
-            ],
-            removeRuleIds: [2], // this removes old rule if any
-          },
-          () => {
-            console.log("successfully blocked post");
-            chrome.tabs.sendMessage(tab.id, {message:'click_post'});
-          });
+          startblocking(tab, true);
         }); 
 
       }
@@ -136,26 +172,41 @@ chrome.runtime.onConnect.addListener(function(port) {
       if (query == 'post_submitted'){
         chrome.tabs.query({url: 'http://localhost:8080/report.html'}, function (response) {
           console.log("Submitting Post")
-          console.log(response);  
+          console.log("Reporting: "+reporting)
+          console.log(response[0]);  
           if (response == '' || response == undefined) {
-            chrome.tabs.create({"url": 'http://localhost:8080/report.html' });
+            chrome.cookies.get({'url': 'http://localhost:8080/', 'name': 'id'}, function(cookie) {
+              chrome.tabs.query({url: `http://localhost:8080/report/*`}, function (resp) {
+                console.log("resp.length: "+resp.length)
+                if (resp.length == 0){
+                  chrome.tabs.create({"url": `http://localhost:8080/report/` }, function (tabs) {
+                    reporting = true;
+                    chrome.tabs.query({active: true, url: `http://localhost:8080/report/`}, function (tbs){
+                      console.log("Number of report tabs: "+tbs.length)
+                    })
+                  });
+                } else {
+                  chrome.tabs.update(resp[0].id, {highlighted: true})
+                }
+                
+              })
+            })
           } else {
             chrome.tabs.update(response[0].id, {highlighted: true});
+            chrome.tabs.reload(response[0].id, function (err) {
+              console.log("Err: "+err)
+              console.log("tab reloaded");
+            });
           }
+          chrome.tabs.query({active: true, highlighted: true}, (tabs) => {
+            let tab = tabs[0]
+            startblocking(tab, true);
+          })
         })
       }
 
       if (query == 'clicked_ex'){
-        chrome.declarativeNetRequest.updateDynamicRules
-        (
-          {
-            removeRuleIds: [2]
-          },
-          (response) => {
-            console.log("response: "+response);
-            console.log('rule removed');
-          }
-        );
+        stopblocking();
       }
 
       if (query == 'post_data'){
@@ -179,9 +230,14 @@ chrome.runtime.onConnect.addListener(function(port) {
                 },
                 body: JSON.stringify(message)
               }).then(function(r) {
+                console.log("r: "+JSON.stringify(r))
                 return r.json();
               }).then(function(data) {
-                console.log(data);
+                console.log("Data from post_data: "+JSON.stringify(data));
+                //set cookie to id
+                chrome.cookies.set({"url": "http:localhost:8080/", "name": "id", "value": String(data.id)}, function(cookie) {
+                  console.log("reset cookie: "+cookie)
+                })
               });
             });
           });

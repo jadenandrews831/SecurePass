@@ -37,6 +37,7 @@ chrome.runtime.onMessage.addListener(
       if (post.length >= 1) {
         console.log('post: '+post[0]);
         post[0].addEventListener('click', () => {
+          let bg_port = chrome.runtime.connect({"name":"bg_port"});
           bg_port.postMessage({message:'new_report'});
         });
       }
@@ -45,6 +46,7 @@ chrome.runtime.onMessage.addListener(
     if (request.message == 'submit_post') {
       console.log("securepass.js got message from background: submit_post")
       chrome.devtools.network.onRequestFinished.addListener(() => {
+        let bg_port = chrome.runtime.connect({"name":"bg_port"});
         bg_port.postMessage({message: 'request_post'});
         console.log('requesting post on bg');
       });
@@ -56,6 +58,7 @@ chrome.runtime.onMessage.addListener(
       //   bg_post.postMessage({message: "post_clicked"})
       // });
       console.log("proxy should capture posted data");
+      let bg_port = chrome.runtime.connect({"name":"bg_port"});
       bg_port.postMessage({message: 'click'});
     }
     if (request.message == 'click_post'){
@@ -71,15 +74,20 @@ chrome.runtime.onMessage.addListener(
             post[0].addEventListener('click', () => {
               let bg_port = chrome.runtime.connect({"name":"bg_port"});
               bg_port.postMessage({message: 'post_submitted'});
-              const post_text = document.querySelector(".ql-editor p");
+              const post_text = document.querySelectorAll(".ql-editor p");
               console.log("clicked post");
-              let post_text_data = post_text.innerHTML;
+              let post_text_data = '';
+              for (let i = 0; i < post_text.length; i++){
+                post_text_data+=post_text[i].innerHTML+'<br>';
+              }
+              console.log('post_text_data: '+post_text_data)
               bg_port = chrome.runtime.connect({"name":"bg_port"});
               bg_port.postMessage({message: "post_data", body: post_text_data})
             });
-          }, 1000)
+          }, 1000);
           ex.addEventListener('click', () => {
             console.log("clicked ex");
+            let bg_port = chrome.runtime.connect({"name":"bg_port"});
             bg_port.postMessage({message: 'clicked_ex'});
           });
           
