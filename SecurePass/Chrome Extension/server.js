@@ -7,7 +7,7 @@ const fs = require('fs')
 const {Configuration, OpenAIApi} = require("openai");
 
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY    // OPENAI_API_KEY
 });
 console.log('api key: '+configuration.apiKey)
 const openai = new OpenAIApi(configuration);
@@ -200,11 +200,20 @@ app.get ('/proxy', (req, res) => {
   res.sendFile(__dirname+'/proxy.html');
 });
 
-
+app.get('*/rules.js', (req, res) => {
+  getRules(req, res);
+})
 
 app.get('*/admin.js', (req, res) => {
   adminJS(req, res);
 })
+
+
+app.get('/rr/:name', (req, res) => {
+  res.cookie('s_name', req.params.name);
+  res.sendFile(__dirname+'/rules_and_reports.html');
+})
+
 
 app.post('/user_report.json', (req, res) => {
   console.log(req.body);
@@ -278,6 +287,122 @@ async function login(req, res)
   
 }
 
+async function getRules(req, res){
+  const name = req.cookies['s_name'];
+  let flags = await Users.getGroupStandardFlags(name);
+  let usr_flags = await Users.getUserStandardFlags(name);
+  
+  
+  if (flags == undefined){
+    flags = await Users.getGrpStdFlags('generic');
+  }
+
+  console.log("flags: ", flags)
+  console.log("usr_flags: ", usr_flags)
+
+  flags = JSON.parse(flags)
+  if (usr_flags !== undefined) {
+    console.log("User has no")
+    const keys = Object.keys(JSON.parse(usr_flags));
+    const vals = Object.values(JSON.parse(usr_flags));
+    const g_keys = Object.keys(flags);
+    for (let i=0; i < vals.length; i++){
+      if (g_keys.includes(keys[i])){
+        let k = JSON.parse(usr_flags)[keys[i]];
+        if (k !== null) {
+          flags[keys[i]]=k;
+          console.log('added: '+ keys[i] + " " + flags[keys[i]])
+        }
+      }
+    }
+  }
+  
+  const flag_keys = Object.keys(flags)
+  let table = ''
+
+  table += `
+  <tr>
+    <th>Rule</th>
+    <th>Active</th>
+  </tr>
+  `
+  for (let i =0; i < flag_keys.length; i++){
+    table += `<tr><td>${flag_keys[i]}</td><td>`
+    if (flags[flag_keys[i]].toLowerCase() == 'yes') {
+      table += `&#9989;</td>`
+    } else {
+      table += `&#10060;</td>`
+    }
+    table += '</tr>'
+
+  }
+
+  table += `
+  <tr>
+    <th colspan=2 style="text-align: center;"><h1>Reports</h1></th>
+  </tr>
+  `
+  const reports = await Users.getuserReports()
+  for (let i = 0; i < reports.length; i++) {
+
+  }
+
+
+  // create table which displays each key from the standard rules and a radio button for yes or no.
+  const modRuleText = `
+  <table width=20% id="add_user_tbl" style="text-align: center">
+  <tr>
+    <th colspan=2 style="font-size: 23px; color: rgb(32.2, 34.9, 57.6);">Modify Rules<br><br></td>
+  <tr>  
+  <tr>
+      <th>SSN:</th>
+      <td width=60%><label for="yes">Active</label><input type="radio" class="yes" name="ssn_select" value="active" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><label for="no">Inactive</label><input type="radio" class="no" name="ssn_select" value="inactive" autocomplete="false" style="width: 100%"></td>
+    </tr>
+    <tr>
+      <th>EIN:</th>
+      <td width=60%><input type="radio" class="yes" name="ein_select" value="active" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><input type="radio" class="no" name="ein_select" value="inactive" autocomplete="false" style="width: 100%"></td>
+    </tr>
+    <tr>
+      <th>Card:</th>
+      <td width=60%><input type="radio" class="yes" name="card_select" value="active" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><input type="radio" class="no" name="card_select" value="inactive" autocomplete="false" style="width: 100%"></td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><input type="submit" value="back" id="to_usrs" onclick="showUserTable()"></td>
+      <td style="text-align: right"><input type="submit" value="add +" id="submit_usr" onclick="send_rule()"></td><br><br>
+    </tr>
+    <tr>
+      <td colspan=2 id="resp" style="text-align: center; color: red;"></td>
+    </tr>
+  </table>
+  `
+
+
+  res.send(`
+  const tbl = document.querySelector('#users');
+  const add = document.getElementById('add_user');
+  const menu = document.getElementById('menu');
+
+  menu.innerHTML = '<h1>Rules</h1>'
+
+  function showModifyStandardRules() {
+    manage.innerHTML =\` ${modRuleText}\`
+  }
+
+  function send_rule() {
+
+  }
+
+  add.setAttribute('onclick', 'showModifyStandardRules()')
+  add.setAttribute('value', 'change permissions');
+
+  tbl.innerHTML = \`${table}\`
+  `)
+}
+
+
 async function getReport(req, res)
 {
   console.log('Report Cookies: '+JSON.stringify(req.cookies))
@@ -285,14 +410,19 @@ async function getReport(req, res)
   let report = await Users.getuserReport(req.cookies['id']);
   console.log("getReport ID: "+ req.cookies['id'])
   
+  console.log("flags:"+report[0].flags)
   if (report[0].flags == null){
+    console.log("finishing report")
     report[0].service = 'Linkedin'
     let name = report[0].username;
     report[0].admin = await Users.getUserAdmin(name);
     let flags = await Users.getGroupStandardFlags(name);
     let usr_flags = await Users.getUserStandardFlags(name);
-    if (usr_flags) {
-      flags = JSON.parse(flags)
+    console.log("usr_flags: ", usr_flags)
+    
+    flags = JSON.parse(flags)
+    if (usr_flags !== undefined) {
+      console.log("User has no")
       const keys = Object.keys(JSON.parse(usr_flags));
       const vals = Object.values(JSON.parse(usr_flags));
       const g_keys = Object.keys(flags);
@@ -304,23 +434,24 @@ async function getReport(req, res)
             console.log('added: '+ keys[i] + " " + flags[keys[i]])
           }
         }
-      }
+    }
+    }
+    
 
-      const flag_entries = Object.entries(flags)
-      console.log(flag_entries)
-      report[0].flags = 'None'
-      for (let i=0; i < flag_entries.length; i++){
-        if (flag_entries[i][1] == 'yes') {
-          if (report[0].flags == 'None'){
-            report[0].flags = ''
-          }
-          report[0].flags += await run(report[0].post_text, flag_entries[i][0].toUpperCase());
-          console.log("Key: "+flag_entries[i][0])
+    const flag_entries = Object.entries(flags)
+    console.log(flag_entries)
+    report[0].flags = 'None'
+    for (let i=0; i < flag_entries.length; i++){
+      if (flag_entries[i][1] == 'no') {
+        if (report[0].flags == 'None'){
+          report[0].flags = ''
         }
+        report[0].flags += await run(report[0].post_text, flag_entries[i][0].toUpperCase());
+        console.log("Key: "+flag_entries[i][0])
       }
     }
-    await Users.finishuserReport(report[0])
-  }
+    await Users.finishuserReport(report[0]);
+  } 
 
   console.log("Report: "+report);
   if (report.hasOwnProperty(0))
@@ -429,22 +560,25 @@ async function adminJS(req, res){
   console.log('User: '+JSON.stringify(user));
   let text = await Users.getAllUsers(user);
   text = JSON.parse(text)
-  const lbl = `
-  <h1>Users</h1><br>
+  const menu = `
+  <div id="menu">
+  <h1>Users</h1>
+  </div>
+  <br>
   `
   const table = function(text) {
     let tbl = '<table style="text-align: center;" id="users">'
     let i;
-    tbl+='<tr><th class="left">Username</th><th class="right">Group</th></tr>'
+    tbl+='<tr><th class="left head"><b>Username</b></th><th class="right head"><b>Group</b></th></tr>'
     for (i = 0; i < text.length; i++){
-      if(text[i].grp == null){
+      if(text[i].grp == null || text[i].grp == "General User"){
         text[i].grp = "generic"
       }
-      tbl+='<tr><td class="left">'+text[i].username+'</td><td class="right">'+text[i].grp+'</td></tr>'
+      tbl+=`<tr><td class="left"><a href="http://localhost:8080/rr/${text[i].username}" class="data">${text[i].username}</a></td><td class="right"><a href="http://localhost:8080/rr/${text[i].grp}" class="data">${text[i].grp}</a></td></tr>`
     }
     tbl+='</table><br><br>'
     tbl+=`<input type="submit" id="add_user" value="add +" onclick="showAddUserWindow()">`
-    return lbl+tbl
+    return menu+tbl
   }
 
   const addUserText = `

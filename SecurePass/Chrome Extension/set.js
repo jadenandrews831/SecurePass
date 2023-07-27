@@ -230,6 +230,25 @@ class Users{
     })
   }
 
+  getGrpStdFlags(grp){
+    return new Promise(send => {
+      this.db.all(`
+      SELECT ssn, ein, card FROM Groups WHERE grp=@grp
+      `, {'@grp': grp}, (err, rows) => {
+        if (err){
+          console.error(err);
+          send(err);
+        } else {
+          console.log(grp)
+          rows.forEach(row => {
+            console.log(row);
+          })
+          send(JSON.stringify(rows[0]));
+        }
+      })
+    })
+  }
+
   getGroupStandardFlags(usr){
     return new Promise(send => {
       this.db.all(`
@@ -258,10 +277,17 @@ class Users{
           console.error(err);
           send(err);
         } else {
+          console.log("Name: ", usr)
           console.log("User Standard Flags: "+JSON.stringify(rows));
           send(JSON.stringify(rows[0]));
         }
       })
+    })
+  }
+
+  getuserReports(name){
+    return new Promise(send => {
+      
     })
   }
 

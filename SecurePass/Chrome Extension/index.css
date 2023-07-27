@@ -35,6 +35,12 @@ html {
   text-align: left;
 }
 
+a.data{
+  color: black;
+  text-decoration: none;
+  font-family: Andale Mono, American Typewriter, Arial Narrow, Arial;
+}
+
 .right{
   text-align: right;
 }
