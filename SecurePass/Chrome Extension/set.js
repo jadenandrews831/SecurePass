@@ -285,9 +285,24 @@ class Users{
     })
   }
 
-  getuserReports(name){
+  getuserReports(user){
     return new Promise(send => {
-      
+      console.log("user:"+user)
+      console.log("username:"+user)
+      this.db.all(`
+      SELECT report_id FROM Reports WHERE username IN (SELECT username FROM Users WHERE username=@usr) ORDER BY created_at DESC
+      `, {"@usr": user}, (err, rows) => {
+        if (err){
+          console.error(err);
+          send(err);
+        } else {
+          console.log("Inside getLastReport()")
+          rows.forEach(row => {
+            console.log(row);
+          })
+          send(rows);
+        }
+      })
     })
   }
 
@@ -590,6 +605,18 @@ class Users{
         console.log('ruleset added');
      }
     })
+  }
+
+  updateRule(msg){
+    this.db.all(`UPDATE Groups SET ssn=@ssn, ein=@ein, card=@card WHERE grp=@name`,
+    {'@ssn': msg.ssn, '@ein': msg.ein, '@card': msg.card, '@name': msg.name}, (err) => {
+      if (err) {
+        console.log(err);
+        console.log('duplicate groupset')
+      } else {
+        console.log('ruleset added');
+     }
+    });
   }
 }
 

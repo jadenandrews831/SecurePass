@@ -52,6 +52,8 @@ chrome.tabs.onUpdated.addListener(function (tabID, changeInfo, tab) {
     })
   }
 
+  
+
   chrome.tabs.query({active: true, url: `http://localhost:8080/report/report.html`}, function (tbs) {
     reporting = true;
     if (tbs.length > 1){
@@ -237,7 +239,33 @@ chrome.runtime.onConnect.addListener(function(port) {
                 //set cookie to id
                 chrome.cookies.set({"url": "http:localhost:8080/", "name": "id", "value": String(data.id)}, function(cookie) {
                   console.log("reset cookie: "+cookie)
+                }); 
+                chrome.cookies.get({'url':'http://localhost:8080/', "name": "id"}, function(cookie){
+                  let report_id = cookie.value;
+                  // chrome.storage.local.set({'org-id': cookie.value});  add org-id to local storage
+                  setTimeout(() => {
+                    fetch(`http://localhost:8080/json/report/${report_id}`).then(response => response.json()).then(function (data) {
+                      console.log("data: ", data)
+                      const flags = String(data[0].flags)
+                      console.log("flags: ", flags)
+                      if (flags) {
+                        if (flags == "None"){
+                          stopblocking()
+                          console.log("You can submit your post now")
+                          // automatically submit post
+                        }
+                        if (flags.includes("Yes found here:")){
+                          console.log("Your post was flagged and an email will be sent to your administrator")
+                        } else {
+                          stopblocking()
+                          console.log("You can submit your post now")
+                          // automatically submit post
+                        }
+                      } 
+                    } );
+                  }, 10000);
                 })
+              
               });
             });
           });

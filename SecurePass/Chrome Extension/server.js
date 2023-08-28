@@ -99,7 +99,7 @@ async function run(text, type) {
   getFineTunedModelName();
   try {
     const comp = await openai.createCompletion({
-      model: 'ada:ft-personal-2023-07-27-00-19-43',
+      model: 'ada:ft-personal-2023-07-28-05-47-00',
       prompt: `${type}}: ${text}`,
       max_tokens: 30
     });
@@ -170,8 +170,14 @@ app.get('*/ui.js', (req, res) => {
   res.sendFile(__dirname+'/ui.js');
 });
 
+app.get('/json/report/:id', (req, res) => {
+  reportIDJSON(req,res)
+})
+
 app.get('/report/', (req, res) => {
-  getReportID(req, res);
+  setTimeout(() => {
+    getReportID(req, res);
+  }, 500);
 })
 
 app.get('/report/load/:id', (req, res) => {
@@ -252,6 +258,10 @@ app.post("/adduser", (req, res) => {
   
 });
 
+app.post("/update_rule", (req, res) => {
+  updateRule(req, res)
+});
+
 async function getReportID(req, res){
   const user = req.cookies['name']
   const lastReportID = await Users.getLastReport(user);
@@ -259,6 +269,24 @@ async function getReportID(req, res){
     res.cookie('id', lastReportID)
     res.redirect(`/report/load/${lastReportID}`)
   }, 1000);
+}
+
+async function updateRule(req, res){
+  let msg = req.body
+  Users.updateRule(msg);
+  res.send(`{
+    message: rule updated;
+  }`);
+}
+
+async function reportIDJSON(req, res){
+  let report = await Users.getuserReport(req.params.id);
+  if (report.length > 0){
+    console.log("report: "+JSON.stringify(report));
+    res.send(report)
+  } else {
+    res.send({report_id: null})
+  }
 }
 
 async function reportID(req, res){
@@ -302,7 +330,7 @@ async function getRules(req, res){
 
   flags = JSON.parse(flags)
   if (usr_flags !== undefined) {
-    console.log("User has no")
+    console.log("User has no flags")
     const keys = Object.keys(JSON.parse(usr_flags));
     const vals = Object.values(JSON.parse(usr_flags));
     const g_keys = Object.keys(flags);
@@ -329,9 +357,9 @@ async function getRules(req, res){
   for (let i =0; i < flag_keys.length; i++){
     table += `<tr><td>${flag_keys[i]}</td><td>`
     if (flags[flag_keys[i]].toLowerCase() == 'yes') {
-      table += `&#9989;</td>`
+      table += `exempt</td>`
     } else {
-      table += `&#10060;</td>`
+      table += `&#9989;</td>`
     }
     table += '</tr>'
 
@@ -342,9 +370,18 @@ async function getRules(req, res){
     <th colspan=2 style="text-align: center;"><h1>Reports</h1></th>
   </tr>
   `
-  const reports = await Users.getuserReports()
-  for (let i = 0; i < reports.length; i++) {
 
+  const reports = await Users.getuserReports(name)
+  if (reports.length > 0) {
+    console.log(reports.length)
+    for (let i = 0; i < reports.length; i++) {
+      if (i > 10){
+        break;
+      }
+      table += `<tr ><td colspan=2><a href="http://localhost:8080/report/${reports[i].report_id}">${reports[i].report_id}</a></td></tr>`
+    }
+  } else {
+    table += `<tr><td colspan=2>No Reports</td></tr>`
   }
 
 
@@ -356,22 +393,21 @@ async function getRules(req, res){
   <tr>  
   <tr>
       <th>SSN:</th>
-      <td width=60%><label for="yes">Active</label><input type="radio" class="yes" name="ssn_select" value="active" autocomplete="false" style="width: 100%"></td>
-      <td width=60%><label for="no">Inactive</label><input type="radio" class="no" name="ssn_select" value="inactive" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><label for="yes">Active</label><input type="radio" class="yes" name="ssn_select" value="no" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><label for="no">Inactive</label><input type="radio" class="no" name="ssn_select" value="yes" autocomplete="false" style="width: 100%"></td>
     </tr>
     <tr>
       <th>EIN:</th>
-      <td width=60%><input type="radio" class="yes" name="ein_select" value="active" autocomplete="false" style="width: 100%"></td>
-      <td width=60%><input type="radio" class="no" name="ein_select" value="inactive" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><input type="radio" class="yes" name="ein_select" value="no" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><input type="radio" class="no" name="ein_select" value="yes" autocomplete="false" style="width: 100%"></td>
     </tr>
     <tr>
       <th>Card:</th>
-      <td width=60%><input type="radio" class="yes" name="card_select" value="active" autocomplete="false" style="width: 100%"></td>
-      <td width=60%><input type="radio" class="no" name="card_select" value="inactive" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><input type="radio" class="yes" name="card_select" value="no" autocomplete="false" style="width: 100%"></td>
+      <td width=60%><input type="radio" class="no" name="card_select" value="yes" autocomplete="false" style="width: 100%"></td>
     </tr>
     <tr>
-      <td style="text-align: left"><input type="submit" value="back" id="to_usrs" onclick="showUserTable()"></td>
-      <td style="text-align: right"><input type="submit" value="add +" id="submit_usr" onclick="send_rule()"></td><br><br>
+      <td style="text-align: right"><input type="submit" value="submit" id="submit_usr" onclick="send_rule()"></td><br><br>
     </tr>
     <tr>
       <td colspan=2 id="resp" style="text-align: center; color: red;"></td>
@@ -388,11 +424,51 @@ async function getRules(req, res){
   menu.innerHTML = '<h1>Rules</h1>'
 
   function showModifyStandardRules() {
-    manage.innerHTML =\` ${modRuleText}\`
+    manage.innerHTML =\`${modRuleText}\`
   }
 
   function send_rule() {
+    const ssn = document.querySelectorAll('[name="ssn_select"]')
+    const ein = document.querySelectorAll('[name="ein_select"]')
+    const card = document.querySelectorAll('[name="card_select"]')
 
+    results = {}
+
+    for (let i = 0; i < ssn.length;i++){
+      if (ssn[i].checked){
+        results.ssn = ssn[i].value
+      }
+    }
+
+    for (let i = 0; i < ein.length; i++){
+      if (ein[i].checked){
+        results.ein = ein[i].value
+      }
+    }
+
+    for (let i = 0; i < card.length; i++){
+      if (card[i].checked){
+        results.card = card[i].value
+      }
+    }
+
+    results.name = "${name}";
+
+    fetch('http://localhost:8080/update_rule', {
+      method: 'post',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(results)
+    }).then(function(r) {
+      let o = r.json();
+      console.log(o)
+      return o;
+    }).then(function(data) {
+      const msg = data.message
+      console.log("message: ", msg)
+    });
+    
   }
 
   add.setAttribute('onclick', 'showModifyStandardRules()')
@@ -411,7 +487,7 @@ async function getReport(req, res)
   console.log("getReport ID: "+ req.cookies['id'])
   
   console.log("flags:"+report[0].flags)
-  if (report[0].flags == null){
+  if (report[0].flags == null || report[0].flags == 'No Flags Found (RETRY)'){
     console.log("finishing report")
     report[0].service = 'Linkedin'
     let name = report[0].username;
@@ -422,7 +498,7 @@ async function getReport(req, res)
     
     flags = JSON.parse(flags)
     if (usr_flags !== undefined) {
-      console.log("User has no")
+      console.log("User has no flags")
       const keys = Object.keys(JSON.parse(usr_flags));
       const vals = Object.values(JSON.parse(usr_flags));
       const g_keys = Object.keys(flags);
@@ -446,7 +522,21 @@ async function getReport(req, res)
         if (report[0].flags == 'None'){
           report[0].flags = ''
         }
-        report[0].flags += await run(report[0].post_text, flag_entries[i][0].toUpperCase());
+        let completion = await run(report[0].post_text, flag_entries[i][0].toUpperCase());
+        completion = completion.split('\n')
+        for (let i = 0; i < completion.length; i++){
+          let flag = completion[i]
+          if (flag.toLowerCase().includes("yes found here")){
+            report[0].flags += `${flag_entries[i][0].toUpperCase()}: Yes Found Here: <br><p>${completion[i]}</p><br>`;
+            break;
+          } else if (flag.toLowerCase().includes('not found')){
+            report[0].flags += `${flag_entries[i][0].toUpperCase()}: Not Found<br>`;
+            break;
+          } else {
+            console.log(completion[i])
+            report[0].flags += 'No Flags Found (RETRY)'
+          }
+        }
         console.log("Key: "+flag_entries[i][0])
       }
     }
@@ -537,7 +627,7 @@ async function addUser(req, res)
 
 async function addNewUser(req, res){
   let usr = req.body;
-  console.log("password:"+usr.password);
+  console.log("password: "+usr.password);
   let added = await Users.checkForUser(usr);
   console.log("added: "+added)
   if (!added) {
